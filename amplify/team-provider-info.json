@@ -1,0 +1,20 @@
+{
+  "staging": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-safedrive-staging-154447-authRole",
+      "UnauthRoleArn": "arn:aws:iam::980973605321:role/amplify-safedrive-staging-154447-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::980973605321:role/amplify-safedrive-staging-154447-authRole",
+      "Region": "ap-southeast-1",
+      "DeploymentBucketName": "amplify-safedrive-staging-154447-deployment",
+      "UnauthRoleName": "amplify-safedrive-staging-154447-unauthRole",
+      "StackName": "amplify-safedrive-staging-154447",
+      "StackId": "arn:aws:cloudformation:ap-southeast-1:980973605321:stack/amplify-safedrive-staging-154447/c26b97e0-6b45-11ed-8560-021d6ba308dc",
+      "AmplifyAppId": "d3r2s51pmlzlky"
+    },
+    "categories": {
+      "auth": {
+        "SafeDrive": {}
+      }
+    }
+  }
+}
