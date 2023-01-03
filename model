@@ -1,0 +1,250 @@
+import tensorflow as tp
+import cv2
+import os
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+
+img_array = cv2.imread("train_dataset/closed_eye/s0001_00056_0_0_0_0_0_01.png",cv2.IMREAD_GRAYSCALE) 
+
+plt.imshow(img_array,cmap="gray")
+
+img_array.shape
+
+Datadirectory="train_dataset/"
+Classes = ["closed_eye","open_eye"]
+for category in Classes:
+    path = os.path.join(Datadirectory, category)
+    for img in os.listdir(path):
+        img_array = cv2.imread(os.path.join(path,img),cv2.IMREAD_GRAYSCALE)
+        backtorgb = cv2.cvtColor(img_array,cv2.COLOR_GRAY2RGB)
+        plt.imshow(img_array, cmap="gray")
+        plt.show()
+        break
+    break
+    
+    
+img_size= 224
+new_array= cv2.resize(backtorgb, (img_size, img_size))
+plt.imshow(new_array, cmap="gray")
+plt.show()
+
+training_Data = []
+
+def create_training_Data():
+    for category in Classes:
+        path = os.path.join(Datadirectory, category)
+        class_num= Classes.index(category)## 0 1
+        for img in os.listdir(path):
+            try:
+                img_array = cv2.imread(os.path.join(path,img),cv2.IMREAD_GRAYSCALE)
+                backtorgb =cv2.cvtColor(img_array,cv2.COLOR_GRAY2RGB)
+                new_array = cv2.resize(backtorgb, (img_size,img_size))
+                training_Data.append([new_array,class_num])
+            except Exception as e:
+                pass
+                
+                
+                
+create_training_Data()
+
+print(len(training_Data))
+
+import random
+random.shuffle(training_Data)
+
+X = []
+y = []
+
+for features,label in training_Data:
+    X.append(features)
+    y.append(label)
+    
+X= np.array(X).reshape(-1, img_size, img_size, 3)
+
+X.shape
+
+#normalize the data
+X=X/225.0
+
+Y=np.array(y)
+
+import pickle
+
+pickle_out = open("X.pickle","wb")
+pickle.dump(X,pickle_out)
+pickle_out.close()
+
+pickle_out = open("y.pickle","wb")
+pickle.dump(y,pickle_out)
+pickle_out.close()
+
+
+pickle_in = open ("X.pickle","rb")
+X = pickle.load(pickle_in)
+
+pickle_in = open ("y.pickle","rb")
+y= pickle.load(pickle_in)
+
+
+#deep learning modelfor training- Training Learning
+
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+
+
+model = tf.keras.applications.mobilenet.MobileNet()
+
+model.summary()
+
+#transfer lerning 
+
+base_input = model.layers[0].input ##input
+
+base_output = model.layers [-4].output 
+
+Flat_layer = layers.Flatten()(base_output)
+final_output = layers.Dense(1)(Flat_layer) ##one node (1/0)
+final_output = layers.Activation('sigmoid')(final_output)
+
+new_model = keras.Model(inputs= base_input, outputs= final_output)
+
+new_model.summary()
+
+new_model.compile(loss="binary_crossentropy", optimizer = "adam", metrics = ["accuracy"])
+
+new_model.fit(X,Y,epochs = 1, validation_split = 0.1) #training
+
+new_model.save('my_model.h5')
+
+new_model = tf.keras.models.load_model('my_model.h5')
+
+
+#checking predictions
+
+img_array = cv2.imread('s0001_00026_0_0_0_0_0_01.png', cv2.IMREAD_GRAYSCALE)
+backtorgb = cv2.cvtColor(img_array,cv2.COLOR_GRAY2RGB)
+new_array = cv2.resize(backtorgb, (img_size, img_size))
+
+X_input = np.array(new_array).reshape(1, img_size, img_size, 3)
+
+X_input.shape
+
+plt.imshow(new_array)
+
+X_input= X_input/255.0
+
+prediction #<>
+
+img = cv2.imread ('sad_face.jpeg')
+
+plt.imshow(cv2.cvtColor(img,cv2.COLOR_BGR2RGB))
+
+faceCasade=cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontface_default.xml')
+
+eye_cascade = cv2.CascadeClassifier (cv2.data.haarcascades + 'haarcascade_eye.xml')
+
+gray= cv2.cvtColor (img, cv2.COLOR_BGR2GRAY)
+
+eyes = eye_cascade.detectMultiScale(gray,1.1,4)
+
+for (x,y,w,h) in eyes:
+    cv2.rectangle (img, (x,y), (x+w,y+h), (0,255,0),2)
+    
+ plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+ 
+ #cropping eyes
+ 
+ faceCasade=cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontface_default.xml')
+gray= cv2.cvtColor (img, cv2.COLOR_BGR2GRAY)
+eyes = eye_cascade.detectMultiScale(gray,1.1,4)
+for x,y,w,h in eyes:
+    roi_gray= gray[y:y+h, x:x+w]
+    roi_color= img[y:y+h, x:x+w]
+    eyess = eye_cascade.detectMultiScale(roi_gray)
+    if (len)==0:
+        print("eyes are not detected")
+    else:
+        for (ex,ey,ew,eh) in eyess:
+            eyes_roi = roi_color [ey: ey+eh, ex: ex+ ew]
+            
+plt.imshow(cv2.cvtColor(eyes_roi,cv2.COLOR_BGR2RGB))
+
+eyes_roi.shape
+
+final_image = cv2.resize(eyes_roi, (224, 244))
+final_image = np.expand_dims(final_image, axis=0) #need fourth dimension
+final_image=final_image/255.0
+
+final_image.shape
+
+new_model.predict(final_image)
+
+#real time face detection
+
+import cv2
+import numpy as np
+path="haarcascade_frontalface_default.xml"
+faceCascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+cap = cv2.VideoCapture(1)
+#check if webcam is opened correctly
+if not cap.isOpened():
+    cap = cv2.VideoCapture(0)
+if not cap.isOpened():
+    raise IOError ("Cannot open webcam")
+
+while True:
+    ret,frame = cap.read()
+    eye_cascade = cv2.CascadeClassifier (cv2.data.haarcascades + 'haarcascade_eye.xml')
+    gray= cv2.cvtColor (frame, cv2.COLOR_BGR2GRAY)
+    #print (faceCascade.empty())
+    eyes= eye_cascade.detectMultiScale(gray,1.1,4)
+    for x,y,w,h in eyes:
+        roi_gray = gray[y:y+h, x:x+w]
+        roi_color = frame[y:y+h, x:x+w]
+        cv2.rectangle(frame,(x,y),(x+w, y+h), (0,255,0),2)
+        eyess= eye_cascade.detectMultiScale(roi_gray)
+        if len(eyess) == 0:
+            print("eyes are not detected")
+        else:
+            for (ex,ey,ew,eh) in eyess:
+                eyes_roi = roi_color[ey: ey+eh, ex:ex+ew]
+    
+    final_image = cv2.resize(eyes_roi, (224,224))
+    final_image = np.expand_dims(final_image, axis=0) #need fourth dimension
+    final_image= final_image/255.0
+    
+    Predictions = new_model.predict(final_image)
+    if (Predictions>=1.0):
+        status = "Open Eyes"
+    else:
+        status = "Closed Eyes"
+        
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    print(faceCascade.empty())
+    faces = faceCascade.detectMultiScale(gray,1.1,4)
+    
+    #draw rectangle around face
+    for (x,y,w,h) in faces:
+        cv2.rectangle(frame, (x,y), (x+w,y+h), (0,255,0),2)
+        
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    
+    #use putText() method for insterting text on video
+    cv2.putText(frame,
+                status,
+                (50,50),
+                font,3,
+                (0,0,255),
+                2,
+                cv2.LINE_4)
+    cv2.imshow('Drowsiness Detection tut', frame)
+    
+    if cv2.waitKey(2) & 0xFF == ord ('q'):
+        break
+        
+cap.release()
+cv2.destroyAllWndows()
+
